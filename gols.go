@@ -51,7 +51,7 @@ func lsdirs(args []string) error {
 				if *execs == "" {
 					fmt.Println(txt)
 				} else {
-					lines = append(lines)
+					lines = append(lines, txt)
 				}
 			}
 		}
@@ -72,10 +72,12 @@ func lsdirs(args []string) error {
 	l.Lock()
 	defer l.Unlock()
 	if *execs != "" {
+
 		//TODO quotes
 		execArr := strings.Split(*execs, " ")
 		cmd2 := exec.Command(execArr[0])
 		cmd2.Args = execArr
+		cmd2.Args = append(cmd2.Args, lines...)
 		cmd2.Stdout = os.Stdout
 		cmd2.Stderr = os.Stderr
 		err = cmd2.Start()
