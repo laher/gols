@@ -27,7 +27,7 @@ func lsdirs(args []string) error {
 	go func() {
 		for scanner.Scan() {
 			txt := scanner.Text()
-			if !strings.Contains(txt, "vendor") {
+			if !strings.Contains(txt, "/vendor/") {
 				fmt.Println(txt)
 			}
 		}
