@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 	"unicode"
 )
 
@@ -44,30 +43,25 @@ func Ls(args []string, ignorePackageSubstrings []string, print bool) ([]string, 
 	}
 	scanner := bufio.NewScanner(stdout)
 	lines := []string{}
-	l := sync.Mutex{}
-	go func() {
-		l.Lock()
-		for scanner.Scan() {
-			txt := scanner.Text()
-			ignore := false
-			for _, i := range ignorePackageSubstrings {
-				if strings.Contains(txt, i) {
-					ignore = true
-					break
-				}
-			}
-			if !ignore {
-				if print {
-					fmt.Println(txt)
-				}
-				lines = append(lines, txt)
-			}
-		}
-		l.Unlock()
-	}()
 	err = cmd.Start()
 	if err != nil {
 		return nil, err
+	}
+	for scanner.Scan() {
+		txt := scanner.Text()
+		ignore := false
+		for _, i := range ignorePackageSubstrings {
+			if strings.Contains(txt, i) {
+				ignore = true
+				break
+			}
+		}
+		if !ignore {
+			if print {
+				fmt.Println(txt)
+			}
+			lines = append(lines, txt)
+		}
 	}
 	err = cmd.Wait()
 	if err != nil {
@@ -77,12 +71,10 @@ func Ls(args []string, ignorePackageSubstrings []string, print bool) ([]string, 
 	if err != nil {
 		return nil, err
 	}
-	l.Lock()
-	defer l.Unlock()
 	return lines, err
 }
 
-// Exec runs a given command having already filtered out 'ignored' packages
+// Exec runs a given command via Exec, taking a list of packages. It doesn't ignore any packages (this should be done using Ls).
 func Exec(execArr []string, pkgs []string) error {
 	cmd2 := exec.Command(execArr[0])
 	cmd2.Args = execArr
@@ -100,7 +92,7 @@ func Exec(execArr []string, pkgs []string) error {
 	return err
 }
 
-//run gols, given a particular default
+// Main runs go-ls, given a particular default
 func Main(execDefault string) {
 	var ignoreDirsS = flag.String("ignore", "/vendor/", "ignore packages (comma-delimited)")
 	var execs = flag.String("exec", execDefault, "exec (e.g. 'go test')")
