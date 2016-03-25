@@ -2,12 +2,62 @@ package gols
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
+	"unicode"
 )
+
+func Main(execDefault string) {
+	var ignoreDirsS = flag.String("ignore", "/vendor/", "ignore packages (comma-delimited)")
+	var execs = flag.String("exec", "", "exec (e.g. 'go test')")
+	flag.Parse()
+	args := flag.Args()
+	ignoreDirs := []string{}
+	if *ignoreDirsS != "" {
+		ignoreDirs = strings.Split(*ignoreDirsS, ",")
+	}
+	pkgs, err := Ls(args, ignoreDirs, *execs == "")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	if *execs != "" {
+		//TODO handle quotes
+		//execArr := strings.Split(*execs, " ")
+		execArr := splitQuotedString(*execs)
+		err = Exec(execArr, pkgs)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+}
+
+func splitQuotedString(s string) []string {
+	lastQuote := rune(0)
+	f := func(c rune) bool {
+		switch {
+		case c == lastQuote:
+			lastQuote = rune(0)
+			return false
+		case lastQuote != rune(0):
+			return false
+		case unicode.In(c, unicode.Quotation_Mark):
+			lastQuote = c
+			return false
+		default:
+			return unicode.IsSpace(c)
+
+		}
+	}
+
+	m := strings.FieldsFunc(s, f)
+	return m
+}
 
 func Ls(args []string, ignoreDirs []string, print bool) ([]string, error) {
 	cmd := exec.Command("go", "list")

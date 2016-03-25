@@ -3,5 +3,5 @@ package main
 import "github.com/laher/gols"
 
 func main() {
-	gols.Main("")
+	gols.Main("go test")
 }
