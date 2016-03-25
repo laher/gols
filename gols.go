@@ -11,37 +11,6 @@ import (
 	"unicode"
 )
 
-func Main(execDefault string) {
-	var ignoreDirsS = flag.String("ignore", "/vendor/", "ignore packages (comma-delimited)")
-	var execs = flag.String("exec", execDefault, "exec (e.g. 'go test')")
-	var help = flag.Bool("help", false, "This help text")
-	flag.Parse()
-	args := flag.Args()
-	if *help {
-		flag.PrintDefaults()
-		return
-	}
-	ignoreDirs := []string{}
-	if *ignoreDirsS != "" {
-		ignoreDirs = strings.Split(*ignoreDirsS, ",")
-	}
-	pkgs, err := Ls(args, ignoreDirs, *execs == "")
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-	if *execs != "" {
-		//TODO handle quotes
-		//execArr := strings.Split(*execs, " ")
-		execArr := splitQuotedString(*execs)
-		err = Exec(execArr, pkgs)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-	}
-}
-
 func splitQuotedString(s string) []string {
 	lastQuote := rune(0)
 	f := func(c rune) bool {
@@ -64,7 +33,8 @@ func splitQuotedString(s string) []string {
 	return m
 }
 
-func Ls(args []string, ignoreDirs []string, print bool) ([]string, error) {
+// Ls is a wrapper around `go list`, which filters out unneeded packages
+func Ls(args []string, ignorePackageSubstrings []string, print bool) ([]string, error) {
 	cmd := exec.Command("go", "list")
 	cmd.Args = append(cmd.Args, args...)
 	stdout, err := cmd.StdoutPipe()
@@ -79,7 +49,7 @@ func Ls(args []string, ignoreDirs []string, print bool) ([]string, error) {
 		for scanner.Scan() {
 			txt := scanner.Text()
 			ignore := false
-			for _, i := range ignoreDirs {
+			for _, i := range ignorePackageSubstrings {
 				if strings.Contains(txt, i) {
 					ignore = true
 					break
@@ -111,8 +81,8 @@ func Ls(args []string, ignoreDirs []string, print bool) ([]string, error) {
 	return lines, err
 }
 
+// Exec runs a given command having already filtered out 'ignored' packages
 func Exec(execArr []string, pkgs []string) error {
-
 	cmd2 := exec.Command(execArr[0])
 	cmd2.Args = execArr
 	cmd2.Args = append(cmd2.Args, pkgs...)
@@ -127,4 +97,36 @@ func Exec(execArr []string, pkgs []string) error {
 		return err
 	}
 	return err
+}
+
+//run gols, given a particular default
+func Main(execDefault string) {
+	var ignoreDirsS = flag.String("ignore", "/vendor/", "ignore packages (comma-delimited)")
+	var execs = flag.String("exec", execDefault, "exec (e.g. 'go test')")
+	var help = flag.Bool("help", false, "This help text")
+	flag.Parse()
+	args := flag.Args()
+	if *help {
+		flag.PrintDefaults()
+		return
+	}
+	ignoreDirs := []string{}
+	if *ignoreDirsS != "" {
+		ignoreDirs = strings.Split(*ignoreDirsS, ",")
+	}
+	pkgs, err := Ls(args, ignoreDirs, *execs == "")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	if *execs != "" {
+		//TODO handle quotes
+		//execArr := strings.Split(*execs, " ")
+		execArr := splitQuotedString(*execs)
+		err = Exec(execArr, pkgs)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
 }
