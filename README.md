@@ -7,9 +7,9 @@ go-ls was created with the go '/vendor/' folder in mind, in combination with too
 
 go-ls can be used on the commandline, or alternatively you can build its functionality into your own package. 
 
-For library usage docs, see godoc.org/github.com/laher/gols
+For library usage docs, see http://godoc.org/github.com/laher/gols
 
-Note that gols is simply a wrapper around `go list`
+Note that go-ls is simply a wrapper which Exec's `go list`. You can use it to feed the output into tools such as `go test`, `go install`, etc.
 
 
 Why
@@ -43,20 +43,23 @@ Other options:
 
 	go-ls -exec="go test -v" ./...
 	go-ls -exec="go install" -ignore=/vendor/,/scripts/ ./...
+	go-ls -h
 
 
 Installation
 ------------
 
-1. To install the go-ls only:
+To install `go-ls` only:
 
 	go get github.com/laher/gols/cmd/go-ls
 
-2. OR, to install ALL of the tools (go-ls, go-test, go-install):
+*Note that the other tools all have the same functionality as go-ls. They just have different defaults for the -exec option.*
+
+To install ALL of these tools (go-ls, go-test, go-install):
 
 	go get github.com/laher/gols/cmd/...
 
-3. OR you can just install one of the other tools:
+OR you can just install any one of the other tools:
 
 	go get github.com/laher/gols/cmd/go-test
 

@@ -33,7 +33,8 @@ func splitQuotedString(s string) []string {
 	return m
 }
 
-// Ls is a wrapper around `go list`, which filters out unneeded packages
+// Ls is a wrapper around `go list`. It filters out unwanted packages from the results
+// NOTE: Ls invokes "go list" via an os/exec.Command. It uses `go` from the $PATH environment variable
 func Ls(args []string, ignorePackageSubstrings []string, print bool) ([]string, error) {
 	cmd := exec.Command("go", "list")
 	cmd.Args = append(cmd.Args, args...)
