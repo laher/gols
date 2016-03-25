@@ -1,8 +1,7 @@
-package main
+package gols
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,28 +9,12 @@ import (
 	"sync"
 )
 
-func main() {
-	err := lsdirs(os.Args)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-}
-
-func lsdirs(args []string) error {
-	var ignoreDirsS = flag.String("ignore", "/vendor/", "ignore packages (comma-delimited)")
-	var execs = flag.String("exec", "", "exec (e.g. 'go test')")
-	flag.Parse()
+func Ls(args []string, ignoreDirs []string, print bool) ([]string, error) {
 	cmd := exec.Command("go", "list")
-	args = flag.Args()
 	cmd.Args = append(cmd.Args, args...)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return err
-	}
-	ignoreDirs := []string{}
-	if *ignoreDirsS != "" {
-		ignoreDirs = strings.Split(*ignoreDirsS, ",")
+		return nil, err
 	}
 	scanner := bufio.NewScanner(stdout)
 	lines := []string{}
@@ -48,46 +31,45 @@ func lsdirs(args []string) error {
 				}
 			}
 			if !ignore {
-				if *execs == "" {
+				if print {
 					fmt.Println(txt)
-				} else {
-					lines = append(lines, txt)
 				}
+				lines = append(lines, txt)
 			}
 		}
 		l.Unlock()
 	}()
 	err = cmd.Start()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = cmd.Wait()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = scanner.Err()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	l.Lock()
 	defer l.Unlock()
-	if *execs != "" {
+	return lines, err
+}
 
-		//TODO quotes
-		execArr := strings.Split(*execs, " ")
-		cmd2 := exec.Command(execArr[0])
-		cmd2.Args = execArr
-		cmd2.Args = append(cmd2.Args, lines...)
-		cmd2.Stdout = os.Stdout
-		cmd2.Stderr = os.Stderr
-		err = cmd2.Start()
-		if err != nil {
-			return err
-		}
-		err = cmd2.Wait()
-		if err != nil {
-			return err
-		}
+func Exec(execArr []string, pkgs []string) error {
+
+	cmd2 := exec.Command(execArr[0])
+	cmd2.Args = execArr
+	cmd2.Args = append(cmd2.Args, pkgs...)
+	cmd2.Stdout = os.Stdout
+	cmd2.Stderr = os.Stderr
+	err := cmd2.Start()
+	if err != nil {
+		return err
+	}
+	err = cmd2.Wait()
+	if err != nil {
+		return err
 	}
 	return err
 }
