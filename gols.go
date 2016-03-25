@@ -13,9 +13,14 @@ import (
 
 func Main(execDefault string) {
 	var ignoreDirsS = flag.String("ignore", "/vendor/", "ignore packages (comma-delimited)")
-	var execs = flag.String("exec", "", "exec (e.g. 'go test')")
+	var execs = flag.String("exec", execDefault, "exec (e.g. 'go test')")
+	var help = flag.Bool("help", false, "This help text")
 	flag.Parse()
 	args := flag.Args()
+	if *help {
+		flag.PrintDefaults()
+		return
+	}
 	ignoreDirs := []string{}
 	if *ignoreDirsS != "" {
 		ignoreDirs = strings.Split(*ignoreDirsS, ",")
